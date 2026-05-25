@@ -79,6 +79,15 @@ body{
 .opts{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
 .select-all{font-size:12px;color:var(--primary);cursor:pointer;margin-bottom:6px;user-select:none;opacity:.7;transition:opacity .15s;}
 .select-all:hover{opacity:1;}
+/* 排序题 */
+.rank-list{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+.rank-item{display:flex;align-items:center;gap:10px;padding:10px 13px;border:1.5px solid var(--border);border-radius:11px;background:var(--card);cursor:grab;user-select:none;transition:box-shadow .15s,border-color .15s,transform .15s;}
+.rank-item:active{cursor:grabbing;}
+.rank-item.dragging{opacity:.5;border-color:var(--primary);box-shadow:0 4px 16px rgba(91,108,255,.15);transform:scale(1.02);}
+.rank-item.drag-over{border-color:var(--primary);background:var(--support);}
+.rank-num{width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rank-label{font-size:14px;line-height:1.5;}
+.rank-handle{color:var(--text-light);font-size:16px;margin-left:auto;flex-shrink:0;}
 .opt{
   display:flex;align-items:center;gap:11px;
   padding:12px 13px;border:1.5px solid var(--border);border-radius:11px;
@@ -242,10 +251,10 @@ const SURVEY = [
   {id:"Q2",type:"single",req:true,title:"你用 AI 有多久了？",
    opts:["三个月以内","半年左右","一年左右","一年以上","基本没用过"]},
   {id:"Q3",type:"multi",req:true,title:"你平时主要用哪些 AI？",
-   opts:["Claude","ChatGPT","Google / Gemini","Kimi","智谱","MiniMax","豆包（火山引擎）","阿里千问","腾讯元宝","小米 MiMo","DeepSeek","公司产品（可灵 / 快意 / 可图等）","都没怎么用过"],
+   opts:["Claude","ChatGPT","Google / Gemini","Kimi","智谱","MiniMax","豆包（火山引擎）","阿里千问","腾讯元宝","小米 MiMo","DeepSeek","Seedance","公司产品（可灵 / 快意 / 可图等）","都没怎么用过"],
    exclusive:"都没怎么用过"},
   {id:"Q4",type:"multi",req:true,title:"你用过公司哪些 AI 产品？",
-   opts:["可灵 Kling","Seedance","快意 KwaiYii","可图 Kolors","KwaiKAT","数字人平台","智能助手 / Agent","都没用过"],
+   opts:["可灵 Kling","可图 Kolors","MyFlicker","MarioClaw","LangbridgeClaw","Klaw","都没用过"],
    exclusive:"都没用过"},
 ]},
 {part:2,title:"你实际做过什么", items:[
@@ -289,7 +298,8 @@ const SURVEY = [
 {part:5,title:"散会之后", items:[
   {id:"Q14",type:"single",req:true,title:"这场分享，你最想带走的是？",
    opts:["几个马上能上手的具体工具和用法","看懂 AI / Agent 到底是怎么回事","看看别人是怎么真正用起来的","一个能说服我「值得花时间」的理由"]},
-  {id:"Q15",type:"multi",req:true,title:"你希望分享重点听到什么？",
+  {id:"Q15",type:"rank",req:true,title:"你希望分享重点听到什么？",
+   hint:"拖动排序 —— 最想听的排最上面",
    opts:["AI 基础概念扫盲","各家大模型怎么选、怎么用","Agent 是什么、怎么上手","具体工作场景怎么落地","真实实践案例分享","AI 视频 / 图像生成","怎么写好 Prompt"]},
   {id:"Q16",type:"single",req:true,title:"散会后只让你改变一个工作习惯先试，你愿意先试哪个？",
    opts:["下次写方案，先让 AI 出初稿","把一件每天重复的小事，交给 AI 自动做","遇到不懂的事，先认真问一轮 AI 再动手","试着用语音 / 对话的方式跟 AI 协作","还不确定"]},
@@ -473,7 +483,7 @@ function renderQuestion(item){
     box.appendChild(h);
   }
   // 题型标注
-  const tmap={single:'单选',multi:'多选',matrix:'每行选一项',text:item.req?'填空':'选填'};
+  const tmap={single:'单选',multi:'多选',matrix:'每行选一项',text:item.req?'填空':'选填',rank:'拖动排序'};
   const tt=document.createElement('div');tt.className='q-type';tt.textContent=tmap[item.type];
   box.appendChild(tt);
 
@@ -542,11 +552,46 @@ function renderQuestion(item){
     box.appendChild(m);
   }
   else if(item.type==='text'){
-    const ta=document.createElement('textarea');
+    const ta=document.createElement('textarea');ta.className='ta';
     ta.placeholder=item.placeholder||'';
     ta.value=answers[item.id]||'';
     ta.oninput=()=>{answers[item.id]=ta.value.trim();};
     box.appendChild(ta);
+  }
+  else if(item.type==='rank'){
+    // 初始化排序顺序
+    if(!answers[item.id]) answers[item.id]=item.opts.slice();
+    const order=answers[item.id];
+    const rl=document.createElement('div');rl.className='rank-list';
+    let dragIdx=null;
+    function renderRank(){
+      rl.innerHTML='';
+      order.forEach((o,i)=>{
+        const ri=document.createElement('div');ri.className='rank-item';ri.draggable=true;ri.dataset.idx=i;
+        ri.innerHTML=`<span class="rank-num">${i+1}</span><span class="rank-label">${o}</span><span class="rank-handle">⠿</span>`;
+        // 桌面端拖拽
+        ri.ondragstart=(e)=>{dragIdx=i;ri.classList.add('dragging');e.dataTransfer.effectAllowed='move';};
+        ri.ondragend=()=>{ri.classList.remove('dragging');dragIdx=null;rl.querySelectorAll('.rank-item').forEach(x=>x.classList.remove('drag-over'));};
+        ri.ondragover=(e)=>{e.preventDefault();e.dataTransfer.dropEffect='move';ri.classList.add('drag-over');};
+        ri.ondragleave=()=>{ri.classList.remove('drag-over');};
+        ri.ondrop=(e)=>{e.preventDefault();ri.classList.remove('drag-over');if(dragIdx===null||dragIdx===i)return;
+          const moved=order.splice(dragIdx,1)[0];order.splice(i,0,moved);answers[item.id]=order;renderRank();clearErr(item.id);
+        };
+        // 移动端触摸拖拽
+        let touchStartY=0,touchIdx=null;
+        ri.ontouchstart=(e)=>{touchIdx=i;touchStartY=e.touches[0].clientY;ri.classList.add('dragging');};
+        ri.ontouchmove=(e)=>{e.preventDefault();const y=e.touches[0].clientY;
+          const items=[...rl.querySelectorAll('.rank-item')];
+          for(let j=0;j<items.length;j++){const rect=items[j].getBoundingClientRect();if(y>rect.top&&y<rect.bottom&&j!==touchIdx){
+            const moved2=order.splice(touchIdx,1)[0];order.splice(j,0,moved2);answers[item.id]=order;touchIdx=j;renderRank();break;
+          }}
+        };
+        ri.ontouchend=()=>{ri.classList.remove('dragging');touchIdx=null;};
+        rl.appendChild(ri);
+      });
+    }
+    renderRank();
+    box.appendChild(rl);
   }
   return box;
 }
@@ -592,6 +637,7 @@ function validatePart(part){
     else if(item.type==='multi') filled=Array.isArray(v)&&v.length>0;
     else if(item.type==='matrix') filled=Array.isArray(v)&&v.every(x=>x!==null);
     else if(item.type==='text') filled=!!v;
+    else if(item.type==='rank') filled=Array.isArray(v)&&v.length>0;
     if(!filled){
       ok=false;
       const b=document.getElementById('box_'+item.id);
