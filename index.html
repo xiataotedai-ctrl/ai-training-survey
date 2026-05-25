@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>团队 AI 使用小问卷 · AI 漫谈</title>
+<style>
+:root{
+  --primary:#5B6CFF;
+  --primary-dark:#4555E0;
+  --support:#DCE3FF;
+  --accent:#F08A5D;
+  --bg:#F6F3EE;
+  --card:#FFFFFF;
+  --border:#E8E3DB;
+  --text:#2A2A30;
+  --text-mid:#6B6B75;
+  --text-light:#9A9AA3;
+  --dot-gray:#DAD6CF;
+  --dot-green:#78C892;
+  --dot-yellow:#E9C45A;
+  --dot-red:#E97869;
+  --radius-card:16px;
+  --radius-btn:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{background:var(--bg);}
+body{
+  font-family:"MiSans","PingFang SC","Source Han Sans SC","Noto Sans SC",
+              -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  color:var(--text);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.wrap{max-width:560px;margin:0 auto;padding:0 18px;}
+
+/* ---------- 顶部进度 ---------- */
+.topbar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(246,243,238,.92);
+  backdrop-filter:saturate(180%) blur(8px);
+  padding:14px 0 12px;
+}
+.topbar .wrap{display:flex;align-items:center;gap:12px;}
+.brand{display:flex;align-items:center;gap:7px;font-weight:600;font-size:15px;color:var(--primary);white-space:nowrap;}
+.brand .logo{
+  width:22px;height:22px;border-radius:6px;background:var(--primary);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.brand .logo span{display:grid;grid-template-columns:1fr 1fr;gap:2px;}
+.brand .logo i{width:4px;height:4px;background:#fff;border-radius:1px;display:block;}
+.brand .logo i.dim{background:rgba(255,255,255,.45);}
+.progress-track{flex:1;height:6px;background:var(--support);border-radius:99px;overflow:hidden;}
+.progress-fill{height:100%;width:0;background:var(--primary);border-radius:99px;transition:width .4s cubic-bezier(.4,0,.2,1);}
+.progress-label{font-size:12px;color:var(--text-mid);white-space:nowrap;font-variant-numeric:tabular-nums;}
+
+/* ---------- 通用页面 ---------- */
+.page{display:none;padding:8px 0 40px;}
+.page.active{display:block;animation:fade .35s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+.section-tag{
+  display:inline-block;font-size:12px;font-weight:600;color:var(--primary);
+  background:var(--support);padding:4px 11px;border-radius:99px;margin-bottom:14px;
+}
+.q{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius-card);
+  padding:18px 16px;margin-bottom:14px;
+}
+.q-head{display:flex;gap:8px;margin-bottom:4px;}
+.q-num{color:var(--primary);font-weight:700;font-size:15px;flex-shrink:0;}
+.q-title{font-weight:600;font-size:15.5px;line-height:1.5;}
+.q-hint{font-size:12.5px;color:var(--text-light);margin:6px 0 2px 0;}
+.q-type{font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:10px;}
+.q-required{color:var(--accent);}
+
+/* ---------- 选项 ---------- */
+.opts{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+.opt{
+  display:flex;align-items:center;gap:11px;
+  padding:12px 13px;border:1.5px solid var(--border);border-radius:11px;
+  cursor:pointer;transition:all .15s ease;background:#fff;font-size:14.5px;
+}
+.opt:active{transform:scale(.99);}
+.opt.sel{border-color:var(--primary);background:var(--support);}
+.opt .mark{
+  width:20px;height:20px;border:2px solid #CFCBC3;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.opt.single .mark{border-radius:99px;}
+.opt.multi .mark{border-radius:6px;}
+.opt.sel .mark{border-color:var(--primary);background:var(--primary);}
+.opt .mark::after{content:"";opacity:0;transition:opacity .15s;}
+.opt.single.sel .mark::after{width:8px;height:8px;border-radius:99px;background:#fff;opacity:1;}
+.opt.multi.sel .mark::after{
+  width:10px;height:6px;border-left:2px solid #fff;border-bottom:2px solid #fff;
+  transform:rotate(-45deg) translateY(-1px);opacity:1;
+}
+.opt-label{flex:1;}
+
+/* ---------- 矩阵题 ---------- */
+.matrix{margin-top:12px;display:flex;flex-direction:column;gap:14px;}
+.mrow .mrow-label{font-size:14px;font-weight:500;margin-bottom:7px;}
+.mrow-opts{display:flex;gap:6px;}
+.mrow-opts .mopt{
+  flex:1;text-align:center;padding:8px 4px;border:1.5px solid var(--border);
+  border-radius:9px;font-size:12.5px;cursor:pointer;transition:all .15s;background:#fff;
+  line-height:1.35;
+}
+.mrow-opts .mopt:active{transform:scale(.97);}
+.mrow-opts .mopt.sel{border-color:var(--primary);background:var(--support);color:var(--primary-dark);font-weight:600;}
+
+/* ---------- 文本输入 ---------- */
+textarea{
+  width:100%;margin-top:10px;border:1.5px solid var(--border);border-radius:11px;
+  padding:11px 12px;font-size:14.5px;font-family:inherit;color:var(--text);
+  resize:vertical;min-height:62px;background:#fff;
+}
+textarea:focus{outline:none;border-color:var(--primary);}
+
+/* ---------- 按钮 ---------- */
+.nav{display:flex;gap:10px;margin-top:8px;}
+.btn{
+  flex:1;padding:14px;border-radius:var(--radius-btn);font-size:15.5px;font-weight:600;
+  border:none;cursor:pointer;font-family:inherit;transition:all .15s;
+}
+.btn-primary{background:var(--primary);color:#fff;}
+.btn-primary:active{background:var(--primary-dark);}
+.btn-ghost{background:#fff;color:var(--text-mid);border:1.5px solid var(--border);flex:0 0 96px;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+.err{color:var(--accent);font-size:13px;margin-top:10px;display:none;font-weight:500;}
+.err.show{display:block;}
+
+/* ---------- 封面 ---------- */
+.cover{text-align:center;padding:30px 0 40px;}
+.cover .waffle{margin:0 auto 26px;}
+.cover h1{font-size:27px;font-weight:700;letter-spacing:-.5px;margin-bottom:10px;}
+.cover .sub{font-size:14.5px;color:var(--text-mid);margin-bottom:4px;}
+.cover .meta{font-size:13px;color:var(--text-light);margin-bottom:26px;}
+.legend{
+  display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin-bottom:24px;
+}
+.legend .li{
+  display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-mid);
+  background:#fff;border:1px solid var(--border);padding:6px 10px;border-radius:99px;
+}
+.legend .sw{width:11px;height:11px;border-radius:3px;}
+.privacy{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  font-size:12px;color:var(--text-light);margin-top:18px;
+}
+
+/* ---------- 华夫图 ---------- */
+.waffle{display:grid;gap:3px;width:max-content;}
+.waffle i{width:9px;height:9px;border-radius:2px;display:block;}
+
+/* ---------- 结果页 ---------- */
+.result{text-align:center;padding:24px 0 40px;display:none;}
+.result.active{display:block;animation:fade .4s ease;}
+.result h2{font-size:22px;font-weight:700;margin-bottom:6px;}
+.tier-card{
+  border-radius:var(--radius-card);padding:24px 18px;margin:20px 0;color:#fff;
+}
+.tier-card .tier-dot{
+  width:46px;height:46px;border-radius:12px;margin:0 auto 12px;
+  border:3px solid rgba(255,255,255,.55);
+}
+.tier-card .tier-name{font-size:24px;font-weight:700;margin-bottom:6px;}
+.tier-card .tier-desc{font-size:14px;opacity:.92;line-height:1.6;}
+.ladder{text-align:left;margin:18px 0;}
+.ladder .lr{
+  display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:11px;
+  border:1.5px solid var(--border);margin-bottom:8px;background:#fff;font-size:13.5px;
+}
+.ladder .lr.you{border-color:var(--primary);background:var(--support);}
+.ladder .lr .lsw{width:16px;height:16px;border-radius:4px;flex-shrink:0;}
+.ladder .lr .lname{font-weight:600;}
+.ladder .lr .ldesc{color:var(--text-mid);font-size:12.5px;}
+.ladder .lr .ytag{
+  margin-left:auto;font-size:11px;font-weight:700;color:var(--primary);
+  background:#fff;border:1px solid var(--primary);padding:2px 8px;border-radius:99px;flex-shrink:0;
+}
+.result-note{font-size:13px;color:var(--text-mid);line-height:1.7;margin:14px 4px;}
+.dl-row{display:flex;gap:10px;margin-top:8px;}
+
+.foot{text-align:center;font-size:11.5px;color:var(--text-light);padding:10px 0 30px;}
+</style>
+</head>
+<body>
+
+<!-- ===== 顶部进度条 ===== -->
+<div class="topbar" id="topbar" style="display:none;">
+  <div class="wrap">
+    <div class="brand">
+      <div class="logo"><span><i></i><i class="dim"></i><i class="dim"></i><i></i></span></div>
+      AI 漫谈
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="pfill"></div></div>
+    <div class="progress-label" id="plabel">1 / 6</div>
+  </div>
+</div>
+
+<div class="wrap" id="app"></div>
+
+<div class="foot">本问卷由 AI 协作生成 · 仅用于「AI 漫谈」分享会内部分析</div>
+
+<script>
+/* ============================================================
+   团队 AI 使用小问卷 — 数据与逻辑
+   ============================================================ */
+
+// 部署后替换为腾讯云 SCF/API 网关公网 URL；本地测试也可用 ?api=URL 临时覆盖。
+const SURVEY_API_ENDPOINT = "https://1436687267-0fvxpn0984.ap-beijing.tencentscf.com";
+const SUBMIT_TIMEOUT_MS = 12000;
+
+// ---- 梯队定义（点阵图四色对应） ----
+const TIERS = {
+  green:  {name:"L2 · 会聊会用",  color:"#78C892",
+           desc:"你在用 AI，但主要是一问一答 —— 把它当成一个聊天对象。这是全球最多人所在的一档，不丢人。但它的上面，还有很大空间。"},
+  yellow: {name:"L3 · 会让它干活", color:"#E9C45A",
+           desc:"你已经开始让 AI 自己去搜资料、整理结论 —— 半只脚迈进了 Agent。再往前一步，它能替你连续干完整件事。"},
+  red:    {name:"L4 · 在用 Agent", color:"#E97869",
+           desc:"你已经在让 AI 自主拆任务、调用工具、连续作业 —— 这是真正把 AI 当生产力在用的一档。全球只有极少数人到这里。"}
+};
+const LADDER = [
+  {key:"gray",  sw:"#DAD6CF", name:"L1 · 偶尔问问", desc:"想起来才用，当搜索框使"},
+  {key:"green", sw:"#78C892", name:"L2 · 会聊会用", desc:"常用，但仅限一问一答"},
+  {key:"yellow",sw:"#E9C45A", name:"L3 · 会让它干活",desc:"让 AI 自己搜、自己整理"},
+  {key:"red",   sw:"#E97869", name:"L4 · 在用 Agent",desc:"让 AI 自主调工具、连续作业"},
+];
+
+// ---- 问卷结构 ----
+// type: single | multi | matrix | text
+// part 字段用于分段；deep:true 表示仅深度用户可见
+const SURVEY = [
+{part:1,title:"你和 AI 的现状", items:[
+  {id:"Q1",type:"single",req:true,title:"过去一个月，你打开 AI 工具的频率？",
+   opts:["几乎每天","每周几次","想起来才用，一个月几次","基本没用"]},
+  {id:"Q2",type:"single",req:true,title:"你用 AI 有多久了？",
+   opts:["三个月以内","半年左右","一年左右","一年以上","基本没用过"]},
+  {id:"Q3",type:"multi",req:true,title:"你平时主要用哪些 AI？",
+   opts:["豆包","DeepSeek","元宝","Kimi","文心一言 / 其他国产","ChatGPT","Claude","Gemini","公司产品（可灵 / 快意 / 可图等）","都没怎么用过"],
+   exclusive:"都没怎么用过"},
+  {id:"Q4",type:"multi",req:true,title:"你用过公司哪些 AI 产品？",
+   opts:["可灵 Kling","快意 KwaiYii","可图 Kolors","KwaiKAT","数字人平台","都没用过"],
+   exclusive:"都没用过"},
+]},
+{part:2,title:"你实际做过什么", items:[
+  {id:"Q5",type:"matrix",req:true,title:"下面这些事，你实际做过哪些？",
+   hint:"这是全卷最关键的一题 —— 凭你的真实经历选，不用纠结",
+   cols:["做过","没做过","不确定"],
+   rows:[
+     "用 AI 写东西、翻译、总结、查个说法",
+     "让 AI 自己上网搜资料，搜完整理结论给我",
+     "给 AI 一个目标，它自己连着做了好几步才干完",
+     "用过会自己调用工具的 AI（连邮箱/日历/文件、能跑代码、能操作别的软件）",
+     "搭过、或用过别人搭的「Skills / 多个 AI 分工协作」那种",
+   ]},
+  {id:"Q6",type:"multi",req:true,title:"你用 AI 做过下面哪些事？",
+   opts:["写方案 / 文案 / 报告","翻译","总结长文 / 会议纪要","查资料 / 做调研","数据分析","生成图片","生成视频","写代码 / 做小工具","管日程 / 处理邮件","都没做过"],
+   exclusive:"都没做过"},
+  {id:"Q7",type:"matrix",req:true,title:"你用过 AI 的哪些「非文字」功能？",
+   cols:["常用","试过","没用过"],
+   rows:["看图（上传图片让 AI 分析）","听声音 / 语音输入","读 PDF / 文档","看视频"]},
+  {id:"Q8",type:"single",req:true,title:"你试过 AI、但结果让你失望 —— 最近一次是什么情况？",
+   opts:["答得很水、很空，不如自己写","它根本没懂我要什么","来回调试太麻烦，不如自己干","我没失望过 / 基本没认真试过"]},
+]},
+{part:3,title:"认知与名词", items:[
+  {id:"Q9",type:"single",req:true,title:"你能说清 Chatbot 和 Agent 的区别吗？",
+   opts:["能，我知道区别","大概知道，但说不太清","不知道，没概念"]},
+  {id:"Q10",type:"matrix",req:true,title:"看到这几个词，你的真实状态是？",
+   hint:"如实选就好 —— 这能帮我们决定分享会重点讲哪些",
+   cols:["能解释","听过说不清","没听过"],
+   rows:["Prompt（提示词）","Agent（智能体）","MCP","Skills","CLI（命令行）","Context Window（上下文）","Token","多模态"]},
+]},
+{part:4,title:"挡路的是什么", items:[
+  {id:"Q11",type:"text",req:false,title:"回想最近一次：你本来可以用 AI、最后还是自己干了。那是个什么事？",
+   hint:"选填 · 一句话就行 —— 你的回答会变成分享会上的真实案例",
+   placeholder:"比如：上周做竞品分析，本想让 AI 帮忙，但不知道怎么开口，最后还是自己查的……"},
+  {id:"Q12",type:"single",req:true,title:"如果说你还没真正把 AI 用起来，最大的原因是？",
+   opts:["不知道它能帮我干嘛，没场景","试过，但产出不行，不信任","知道它有用，但不知道怎么用好","嫌麻烦 / 没时间研究","我已经用得挺好了"]},
+  {id:"Q13",type:"multi",req:true,title:"你对 AI 最大的担心或疑问是？",
+   opts:["会不会取代我的岗位","用多了人会变笨 / 产生依赖","数据安全、信息泄露","它说的对不对，我没法判断","学习成本太高，跟不上","没有特别担心的"],
+   exclusive:"没有特别担心的"},
+]},
+{part:5,title:"散会之后", items:[
+  {id:"Q14",type:"single",req:true,title:"这场分享，你最想带走的是？",
+   opts:["几个马上能上手的具体工具和用法","看懂 AI / Agent 到底是怎么回事","看看涛哥是怎么真正用起来的","一个能说服我「值得花时间」的理由"]},
+  {id:"Q15",type:"multi",req:true,title:"你希望分享重点听到什么？",
+   opts:["AI 基础概念扫盲","各家大模型怎么选、怎么用","Agent 是什么、怎么上手","具体工作场景怎么落地","涛哥的真实实践案例","AI 视频 / 图像生成","怎么写好 Prompt"]},
+  {id:"Q16",type:"single",req:true,title:"散会后只让你改变一个工作习惯先试，你愿意先试哪个？",
+   opts:["下次写方案，先让 AI 出初稿","把一件每天重复的小事，交给 AI 自动做","遇到不懂的事，先认真问一轮 AI 再动手","试着用语音 / 对话的方式跟 AI 协作","还不确定"]},
+  {id:"Q17",type:"single",req:true,title:"你希望多久之后，自己能从现在这一档往上走一档？",
+   opts:["这场分享完，这周就想动手","一个月内","慢慢来，不着急","没想过"]},
+  {id:"Q18",type:"text",req:false,title:"用一句话说说，你和 AI 现在是什么关系？",
+   hint:"选填 · 随便说 —— 可能会被涛哥念出来哦",
+   placeholder:"比如：像个还不太熟的新同事 / 一个我用不明白的高级工具……"},
+  {id:"Q19",type:"text",req:false,title:"关于这场分享，还有什么想问的、想听的？",
+   hint:"选填 · 兜底题，想到啥写啥",
+   placeholder:"任何关于 AI 的疑问，都可以写在这里……"},
+]},
+{part:6,title:"深度使用情况", deep:true, items:[
+  {id:"D1",type:"single",req:true,title:"你为 AI 付费的情况？",
+   opts:["没付费","付过一次性 / 短期","有长期订阅","既订阅、也按量付 API"]},
+  {id:"D2",type:"multi",req:true,title:"你订阅 / 付费用过哪些平台？",
+   opts:["ChatGPT Plus / Pro","Claude Pro / Max","Gemini Advanced","豆包","Kimi","元宝","DeepSeek（纯 API）","可灵","Cursor","GitHub Copilot","其他","都没有"],
+   exclusive:"都没有"},
+  {id:"D3",type:"single",req:true,title:"你每月在 AI 上的花费大概？",
+   opts:["0","100 元以内","100–300 元","300–1000 元","1000 元以上"]},
+  {id:"D4",type:"single",req:true,title:"你大概了解自己每天消耗多少 Token 吗？",
+   opts:["没有概念","大致几万（轻度问答）","几十万（频繁使用）","百万级（重度 + Agent）","千万级以上","上亿（多 Agent 长时运行）"]},
+  {id:"D5",type:"single",req:true,title:"你一次让 AI 连续工作，最长大概多久？",
+   opts:["几分钟以内","十几分钟","一小时左右","几小时","挂着让它自己跑（半天以上）"]},
+]},
+];
+
+// ---- 状态 ----
+const answers = {};       // {Q1:value,...}  matrix 存数组
+let pageIdx = 0;          // 0=封面，1..N=各分段，最后=结果
+let isDeepUser = false;   // Q0 判定
+let submitting = false;
+const app = document.getElementById('app');
+const topbar = document.getElementById('topbar');
+
+/* ---------- 工具：生成华夫图 ---------- */
+function buildWaffle(cols, rows, fills, dotSize){
+  // fills: 数组，长度 cols*rows，元素为颜色
+  const g=document.createElement('div');
+  g.className='waffle';
+  g.style.gridTemplateColumns=`repeat(${cols},${dotSize||9}px)`;
+  fills.forEach(c=>{
+    const i=document.createElement('i');
+    i.style.background=c;
+    if(dotSize){i.style.width=dotSize+'px';i.style.height=dotSize+'px';}
+    g.appendChild(i);
+  });
+  return g;
+}
+// 封面用的示意华夫图：大片灰 + 底部一条绿 + 几粒黄红
+function coverWaffleFills(cols,rows){
+  const total=cols*rows, fills=[];
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    if(r<rows-3) fills.push('#DAD6CF');
+    else if(r<rows-1) fills.push('#78C892');
+    else { // 末行
+      if(c<cols-4) fills.push('#78C892');
+      else if(c<cols-1) fills.push('#E9C45A');
+      else fills.push('#E97869');
+    }
+  }
+  return fills;
+}
+
+/* ---------- 渲染：封面 ---------- */
+function renderCover(){
+  topbar.style.display='none';
+  const cols=24,rows=14;
+  app.innerHTML='';
+  const c=document.createElement('div');
+  c.className='cover';
+  c.innerHTML=`
+    <h1>团队 AI 使用小问卷</h1>
+    <div class="sub">2 分钟完成，帮我们了解大家的起点</div>
+    <div class="meta">「AI 漫谈」分享会 · 匿名填写</div>
+  `;
+  // 华夫图插到标题前
+  const wf=buildWaffle(cols,rows,coverWaffleFills(cols,rows),9);
+  c.insertBefore(wf,c.firstChild);
+  // 图例
+  const lg=document.createElement('div');
+  lg.className='legend';
+  [['#DAD6CF','还没真正用'],['#78C892','会聊天'],['#E9C45A','会让它干活'],['#E97869','在用 Agent']]
+    .forEach(([sw,t])=>{
+      const li=document.createElement('div');li.className='li';
+      li.innerHTML=`<span class="sw" style="background:${sw}"></span>${t}`;
+      lg.appendChild(li);
+    });
+  c.appendChild(lg);
+  // 说明
+  const note=document.createElement('div');
+  note.className='result-note';
+  note.style.textAlign='center';
+  note.innerHTML='填完问卷，你会看到自己现在大概在哪一档 —— 以及往上还有什么。';
+  c.appendChild(note);
+  // 开始按钮
+  const nav=document.createElement('div');nav.className='nav';
+  const btn=document.createElement('button');
+  btn.className='btn btn-primary';btn.textContent='开始填写';
+  btn.onclick=()=>{pageIdx=1;render();};
+  nav.appendChild(btn);
+  c.appendChild(nav);
+  // 隐私
+  const pv=document.createElement('div');
+  pv.className='privacy';
+  pv.innerHTML='&#128274; 问卷匿名，不记录个人身份信息，仅用于内部分析';
+  c.appendChild(pv);
+
+  app.appendChild(c);
+  window.scrollTo(0,0);
+}
+
+/* ---------- 渲染：分段页 ---------- */
+function visibleParts(){
+  // 封面后，可见的 part 列表（深度模块按需）
+  return SURVEY.filter(p=>!p.deep || isDeepUser);
+}
+function renderPage(){
+  topbar.style.display='block';
+  const parts=visibleParts();
+  const part=parts[pageIdx-1];
+  const totalPages=parts.length;
+  // 进度
+  document.getElementById('pfill').style.width=(pageIdx/(totalPages+1)*100)+'%';
+  document.getElementById('plabel').textContent=`${pageIdx} / ${totalPages}`;
+
+  app.innerHTML='';
+  const pg=document.createElement('div');
+  pg.className='page active';
+  const tag=document.createElement('div');
+  tag.className='section-tag';
+  tag.textContent=`第 ${pageIdx} 部分 · ${part.title}`;
+  pg.appendChild(tag);
+
+  part.items.forEach(item=>pg.appendChild(renderQuestion(item)));
+
+  // 错误提示
+  const err=document.createElement('div');
+  err.className='err';err.id='err';
+  err.textContent='还有必答题没完成，往上看看橙色标记的题目～';
+  pg.appendChild(err);
+
+  // 导航
+  const nav=document.createElement('div');nav.className='nav';
+  if(pageIdx>1){
+    const back=document.createElement('button');
+    back.className='btn btn-ghost';back.textContent='上一步';
+    back.onclick=()=>{pageIdx--;render();};
+    nav.appendChild(back);
+  }
+  const next=document.createElement('button');
+  next.className='btn btn-primary';
+  const isLast=(pageIdx===totalPages);
+  if(isLast)next.id='submitBtn';
+  next.textContent=isLast?'提交问卷':'下一步';
+  next.onclick=()=>goNext(part,isLast);
+  nav.appendChild(next);
+  pg.appendChild(nav);
+
+  app.appendChild(pg);
+  window.scrollTo(0,0);
+}
+
+/* ---------- 渲染：单题 ---------- */
+function renderQuestion(item){
+  const box=document.createElement('div');
+  box.className='q';box.id='box_'+item.id;
+
+  const head=document.createElement('div');
+  head.className='q-head';
+  const num=document.createElement('span');
+  num.className='q-num';num.textContent=item.id.replace('Q','Q').replace('D','D')+'.';
+  const title=document.createElement('span');
+  title.className='q-title';
+  title.innerHTML=item.title+(item.req?' <span class="q-required">*</span>':'');
+  head.appendChild(num);head.appendChild(title);
+  box.appendChild(head);
+
+  if(item.hint){
+    const h=document.createElement('div');h.className='q-hint';h.textContent=item.hint;
+    box.appendChild(h);
+  }
+  // 题型标注
+  const tmap={single:'单选',multi:'多选',matrix:'每行选一项',text:item.req?'填空':'选填'};
+  const tt=document.createElement('div');tt.className='q-type';tt.textContent=tmap[item.type];
+  box.appendChild(tt);
+
+  if(item.type==='single'||item.type==='multi'){
+    const opts=document.createElement('div');opts.className='opts';
+    item.opts.forEach(o=>{
+      const el=document.createElement('div');
+      el.className='opt '+(item.type==='single'?'single':'multi');
+      el.innerHTML=`<span class="mark"></span><span class="opt-label">${o}</span>`;
+      el.onclick=()=>toggleOpt(item,o,el,opts);
+      // 回填
+      const cur=answers[item.id];
+      if(item.type==='single'&&cur===o)el.classList.add('sel');
+      if(item.type==='multi'&&Array.isArray(cur)&&cur.includes(o))el.classList.add('sel');
+      opts.appendChild(el);
+    });
+    box.appendChild(opts);
+  }
+  else if(item.type==='matrix'){
+    const m=document.createElement('div');m.className='matrix';
+    if(!answers[item.id])answers[item.id]=new Array(item.rows.length).fill(null);
+    item.rows.forEach((row,ri)=>{
+      const mr=document.createElement('div');mr.className='mrow';
+      const lb=document.createElement('div');lb.className='mrow-label';
+      lb.textContent=(ri+1)+'. '+row;
+      mr.appendChild(lb);
+      const mo=document.createElement('div');mo.className='mrow-opts';
+      item.cols.forEach(col=>{
+        const c=document.createElement('div');c.className='mopt';c.textContent=col;
+        if(answers[item.id][ri]===col)c.classList.add('sel');
+        c.onclick=()=>{
+          answers[item.id][ri]=col;
+          mo.querySelectorAll('.mopt').forEach(x=>x.classList.remove('sel'));
+          c.classList.add('sel');
+          clearErr(item.id);
+        };
+        mo.appendChild(c);
+      });
+      mr.appendChild(mo);
+      m.appendChild(mr);
+    });
+    box.appendChild(m);
+  }
+  else if(item.type==='text'){
+    const ta=document.createElement('textarea');
+    ta.placeholder=item.placeholder||'';
+    ta.value=answers[item.id]||'';
+    ta.oninput=()=>{answers[item.id]=ta.value.trim();};
+    box.appendChild(ta);
+  }
+  return box;
+}
+
+/* ---------- 选项交互 ---------- */
+function toggleOpt(item,val,el,container){
+  clearErr(item.id);
+  if(item.type==='single'){
+    answers[item.id]=val;
+    container.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));
+    el.classList.add('sel');
+  }else{
+    let arr=Array.isArray(answers[item.id])?answers[item.id].slice():[];
+    const ex=item.exclusive;
+    if(arr.includes(val)){
+      arr=arr.filter(x=>x!==val);
+    }else{
+      if(val===ex){ arr=[ex]; }                       // 选互斥项 → 清空其他
+      else { arr=arr.filter(x=>x!==ex); arr.push(val);}// 选普通项 → 移除互斥项
+    }
+    answers[item.id]=arr;
+    // 重绘该题选中态
+    container.querySelectorAll('.opt').forEach((x,i)=>{
+      const o=item.opts[i];
+      x.classList.toggle('sel',arr.includes(o));
+    });
+  }
+}
+function clearErr(id){
+  const b=document.getElementById('box_'+id);
+  if(b)b.style.borderColor='var(--border)';
+  const e=document.getElementById('err');if(e)e.classList.remove('show');
+}
+
+/* ---------- 校验 + 翻页 ---------- */
+function validatePart(part){
+  let ok=true,firstBad=null;
+  part.items.forEach(item=>{
+    if(!item.req)return;
+    let filled=true;
+    const v=answers[item.id];
+    if(item.type==='single') filled=!!v;
+    else if(item.type==='multi') filled=Array.isArray(v)&&v.length>0;
+    else if(item.type==='matrix') filled=Array.isArray(v)&&v.every(x=>x!==null);
+    else if(item.type==='text') filled=!!v;
+    if(!filled){
+      ok=false;
+      const b=document.getElementById('box_'+item.id);
+      if(b){b.style.borderColor='var(--accent)';if(!firstBad)firstBad=b;}
+    }
+  });
+  if(!ok){
+    const e=document.getElementById('err');if(e)e.classList.add('show');
+    if(firstBad)firstBad.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+  return ok;
+}
+function goNext(part,isLast){
+  if(!validatePart(part))return;
+  // 第 2 部分填完后，根据 Q5 判定是否深度用户 → 决定是否插入深度模块
+  if(part.part===2){
+    isDeepUser=judgeDeep();
+  }
+  if(isLast){
+    submit();
+  }else{
+    pageIdx++;
+    render();
+  }
+}
+
+/* ---------- 判定逻辑 ---------- */
+// Q5 五行：0 基础 1 自主搜 2 多步 3 调工具 4 协作体系
+function judgeTier(){
+  const q5=answers['Q5']||[];
+  const done=i=>q5[i]==='做过';
+  if(done(2)||done(3)||done(4)) return 'red';
+  if(done(1)) return 'yellow';
+  return 'green';
+}
+function judgeDeep(){
+  // 红档，或 Q5 第4项做过 → 视为深度用户，展开深度模块
+  const t=judgeTier();
+  return t==='red';
+}
+
+/* ---------- 提交 + 结果页 ---------- */
+function getSurveyApiEndpoint(){
+  const q=new URLSearchParams(window.location.search);
+  return (q.get('api')||SURVEY_API_ENDPOINT||'').trim();
+}
+function endpointReady(url){
+  return !!url && !url.includes('REPLACE_WITH_TENCENT_SCF_URL');
+}
+function setSubmitBusy(busy){
+  const btn=document.getElementById('submitBtn');
+  if(!btn)return;
+  btn.disabled=busy;
+  btn.textContent=busy?'提交中...':'提交问卷';
+}
+function showSubmitError(message){
+  const e=document.getElementById('err');
+  if(e){
+    e.textContent=message||'提交失败，请稍后重试。';
+    e.classList.add('show');
+    e.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+}
+function saveLocalRecord(record){
+  try{
+    const key='ai_survey_responses';
+    const all=JSON.parse(localStorage.getItem(key)||'[]');
+    all.push(record);
+    localStorage.setItem(key,JSON.stringify(all));
+  }catch(e){}
+}
+async function postSurvey(record){
+  const endpoint=getSurveyApiEndpoint();
+  if(!endpointReady(endpoint)){
+    throw new Error('收集接口还没有配置好，请联系组织者。');
+  }
+  const ctl=window.AbortController?new AbortController():null;
+  const timer=ctl?setTimeout(()=>ctl.abort(),SUBMIT_TIMEOUT_MS):null;
+  try{
+    const res=await fetch(endpoint,{
+      method:'POST',
+      mode:'cors',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(record),
+      signal:ctl?ctl.signal:undefined
+    });
+    const text=await res.text();
+    let data=null;
+    if(text){
+      try{data=JSON.parse(text);}catch(e){}
+    }
+    if(!res.ok || (data && data.ok===false)){
+      throw new Error((data&&(data.message||data.error))||`提交失败（${res.status}）`);
+    }
+    return data||{ok:true};
+  }finally{
+    if(timer)clearTimeout(timer);
+  }
+}
+async function submit(){
+  if(submitting)return;
+  const tier=judgeTier();
+  const record={
+    id:'survey_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8),
+    submittedAt:new Date().toISOString(),
+    isDeepUser:isDeepUser,
+    tier:tier,
+    answers:answers
+  };
+  submitting=true;
+  setSubmitBusy(true);
+  try{
+    const server=await postSurvey(record);
+    record.server=server;
+    saveLocalRecord(record);
+    renderResult(tier,record);
+  }catch(e){
+    saveLocalRecord(Object.assign({},record,{submitFailed:true,submitError:e.message}));
+    showSubmitError(e.message||'提交失败，请稍后重试。');
+  }finally{
+    submitting=false;
+    setSubmitBusy(false);
+  }
+}
+
+function renderResult(tier,record){
+  topbar.style.display='none';
+  document.getElementById('pfill').style.width='100%';
+  app.innerHTML='';
+  const t=TIERS[tier];
+  const r=document.createElement('div');
+  r.className='result active';
+  r.innerHTML=`
+    <h2>感谢填写 ✦ 问卷已提交</h2>
+    <div class="result-note">根据你刚才的回答，你现在大概在 ——</div>
+    <div class="tier-card" style="background:${t.color}">
+      <div class="tier-dot" style="background:${t.color}"></div>
+      <div class="tier-name">${t.name}</div>
+      <div class="tier-desc">${t.desc}</div>
+    </div>
+  `;
+  // 阶梯
+  const lad=document.createElement('div');
+  lad.className='ladder';
+  const ladTitle=document.createElement('div');
+  ladTitle.className='result-note';
+  ladTitle.style.fontWeight='600';
+  ladTitle.style.textAlign='left';
+  ladTitle.textContent='AI 使用的完整阶梯 —— 你在哪，往上是什么：';
+  r.appendChild(ladTitle);
+  LADDER.forEach(l=>{
+    const lr=document.createElement('div');
+    lr.className='lr'+(l.key===tier?' you':'');
+    lr.innerHTML=`
+      <span class="lsw" style="background:${l.sw}"></span>
+      <span><span class="lname">${l.name}</span><br><span class="ldesc">${l.desc}</span></span>
+      ${l.key===tier?'<span class="ytag">你在这</span>':''}
+    `;
+    lad.appendChild(lr);
+  });
+  r.appendChild(lad);
+
+  const note=document.createElement('div');
+  note.className='result-note';
+  note.innerHTML='这一档不代表水平高低 —— 只代表你目前走到哪一步。<br>「AI 漫谈」分享会，就是带大家往上走一档。我们现场见。';
+  r.appendChild(note);
+
+  // 导出按钮
+  const dl=document.createElement('div');
+  dl.className='dl-row';
+  const b1=document.createElement('button');
+  b1.className='btn btn-primary';
+  b1.textContent='下载答卷备份（JSON）';
+  b1.onclick=()=>downloadJSON(record);
+  dl.appendChild(b1);
+  r.appendChild(dl);
+
+  const hint=document.createElement('div');
+  hint.className='result-note';
+  hint.style.fontSize='12px';
+  hint.innerHTML='&#128203; 后台已收集你的答卷，下载文件只是本地备份。';
+  r.appendChild(hint);
+
+  app.appendChild(r);
+  window.scrollTo(0,0);
+}
+
+function downloadJSON(record){
+  const blob=new Blob([JSON.stringify(record,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='AI问卷_'+record.tier+'_'+Date.now()+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ---------- 主渲染 ---------- */
+function render(){
+  if(pageIdx===0){renderCover();return;}
+  renderPage();
+}
+render();
+</script>
+</body>
+</html>
