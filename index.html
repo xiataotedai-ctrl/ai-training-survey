@@ -77,6 +77,8 @@ body{
 
 /* ---------- 选项 ---------- */
 .opts{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+.select-all{font-size:12px;color:var(--primary);cursor:pointer;margin-bottom:6px;user-select:none;opacity:.7;transition:opacity .15s;}
+.select-all:hover{opacity:1;}
 .opt{
   display:flex;align-items:center;gap:11px;
   padding:12px 13px;border:1.5px solid var(--border);border-radius:11px;
@@ -240,10 +242,10 @@ const SURVEY = [
   {id:"Q2",type:"single",req:true,title:"你用 AI 有多久了？",
    opts:["三个月以内","半年左右","一年左右","一年以上","基本没用过"]},
   {id:"Q3",type:"multi",req:true,title:"你平时主要用哪些 AI？",
-   opts:["豆包","DeepSeek","元宝","Kimi","文心一言 / 其他国产","ChatGPT","Claude","Gemini","公司产品（可灵 / 快意 / 可图等）","都没怎么用过"],
+   opts:["Claude","ChatGPT","Google / Gemini","Kimi","智谱","MiniMax","豆包（火山引擎）","阿里千问","腾讯元宝","小米 MiMo","DeepSeek","公司产品（可灵 / 快意 / 可图等）","都没怎么用过"],
    exclusive:"都没怎么用过"},
   {id:"Q4",type:"multi",req:true,title:"你用过公司哪些 AI 产品？",
-   opts:["可灵 Kling","快意 KwaiYii","可图 Kolors","KwaiKAT","数字人平台","都没用过"],
+   opts:["可灵 Kling","Seedance","快意 KwaiYii","可图 Kolors","KwaiKAT","数字人平台","智能助手 / Agent","都没用过"],
    exclusive:"都没用过"},
 ]},
 {part:2,title:"你实际做过什么", items:[
@@ -286,15 +288,15 @@ const SURVEY = [
 ]},
 {part:5,title:"散会之后", items:[
   {id:"Q14",type:"single",req:true,title:"这场分享，你最想带走的是？",
-   opts:["几个马上能上手的具体工具和用法","看懂 AI / Agent 到底是怎么回事","看看涛哥是怎么真正用起来的","一个能说服我「值得花时间」的理由"]},
+   opts:["几个马上能上手的具体工具和用法","看懂 AI / Agent 到底是怎么回事","看看别人是怎么真正用起来的","一个能说服我「值得花时间」的理由"]},
   {id:"Q15",type:"multi",req:true,title:"你希望分享重点听到什么？",
-   opts:["AI 基础概念扫盲","各家大模型怎么选、怎么用","Agent 是什么、怎么上手","具体工作场景怎么落地","涛哥的真实实践案例","AI 视频 / 图像生成","怎么写好 Prompt"]},
+   opts:["AI 基础概念扫盲","各家大模型怎么选、怎么用","Agent 是什么、怎么上手","具体工作场景怎么落地","真实实践案例分享","AI 视频 / 图像生成","怎么写好 Prompt"]},
   {id:"Q16",type:"single",req:true,title:"散会后只让你改变一个工作习惯先试，你愿意先试哪个？",
    opts:["下次写方案，先让 AI 出初稿","把一件每天重复的小事，交给 AI 自动做","遇到不懂的事，先认真问一轮 AI 再动手","试着用语音 / 对话的方式跟 AI 协作","还不确定"]},
   {id:"Q17",type:"single",req:true,title:"你希望多久之后，自己能从现在这一档往上走一档？",
    opts:["这场分享完，这周就想动手","一个月内","慢慢来，不着急","没想过"]},
   {id:"Q18",type:"text",req:false,title:"用一句话说说，你和 AI 现在是什么关系？",
-   hint:"选填 · 随便说 —— 可能会被涛哥念出来哦",
+   hint:"选填 · 随便说 —— 可能会被念出来哦",
    placeholder:"比如：像个还不太熟的新同事 / 一个我用不明白的高级工具……"},
   {id:"Q19",type:"text",req:false,title:"关于这场分享，还有什么想问的、想听的？",
    hint:"选填 · 兜底题，想到啥写啥",
@@ -304,7 +306,7 @@ const SURVEY = [
   {id:"D1",type:"single",req:true,title:"你为 AI 付费的情况？",
    opts:["没付费","付过一次性 / 短期","有长期订阅","既订阅、也按量付 API"]},
   {id:"D2",type:"multi",req:true,title:"你订阅 / 付费用过哪些平台？",
-   opts:["ChatGPT Plus / Pro","Claude Pro / Max","Gemini Advanced","豆包","Kimi","元宝","DeepSeek（纯 API）","可灵","Cursor","GitHub Copilot","其他","都没有"],
+   opts:["Claude Pro / Max","ChatGPT Plus / Pro","Gemini Advanced","Kimi","智谱","MiniMax","豆包","阿里千问","腾讯元宝","小米 MiMo","DeepSeek（纯 API）","可灵","Seedance","Cursor","GitHub Copilot","其他","都没有"],
    exclusive:"都没有"},
   {id:"D3",type:"single",req:true,title:"你每月在 AI 上的花费大概？",
    opts:["0","100 元以内","100–300 元","300–1000 元","1000 元以上"]},
@@ -476,6 +478,30 @@ function renderQuestion(item){
   box.appendChild(tt);
 
   if(item.type==='single'||item.type==='multi'){
+    // 全选按钮（仅多选题）
+    if(item.type==='multi'){
+      const sa=document.createElement('div');
+      sa.className='select-all';
+      sa.textContent='全选';
+      sa.onclick=()=>{
+        const ex=item.exclusive;
+        const allNonExclusive=item.opts.filter(o=>o!==ex);
+        const cur=answers[item.id]||[];
+        const allSelected=allNonExclusive.every(o=>cur.includes(o));
+        if(allSelected){
+          answers[item.id]=[];
+        }else{
+          answers[item.id]=allNonExclusive.slice();
+        }
+        const arr=answers[item.id];
+        opts.querySelectorAll('.opt').forEach((x,i)=>{
+          const o=item.opts[i];
+          x.classList.toggle('sel',arr.includes(o));
+        });
+        clearErr(item.id);
+      };
+      box.appendChild(sa);
+    }
     const opts=document.createElement('div');opts.className='opts';
     item.opts.forEach(o=>{
       const el=document.createElement('div');
