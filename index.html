@@ -216,6 +216,7 @@ textarea:focus{outline:none;border-color:var(--primary);}
 
 <div class="foot">本问卷由 AI 协作生成 · 仅用于「AI 漫谈」分享会内部分析</div>
 
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 <script>
 /* ============================================================
    团队 AI 使用小问卷 — 数据与逻辑
@@ -563,35 +564,38 @@ function renderQuestion(item){
     if(!answers[item.id]) answers[item.id]=item.opts.slice();
     const order=answers[item.id];
     const rl=document.createElement('div');rl.className='rank-list';
-    let dragIdx=null;
     function renderRank(){
       rl.innerHTML='';
       order.forEach((o,i)=>{
-        const ri=document.createElement('div');ri.className='rank-item';ri.draggable=true;ri.dataset.idx=i;
+        const ri=document.createElement('div');ri.className='rank-item';ri.dataset.val=o;
         ri.innerHTML=`<span class="rank-num">${i+1}</span><span class="rank-label">${o}</span><span class="rank-handle">⠿</span>`;
-        // 桌面端拖拽
-        ri.ondragstart=(e)=>{dragIdx=i;ri.classList.add('dragging');e.dataTransfer.effectAllowed='move';};
-        ri.ondragend=()=>{ri.classList.remove('dragging');dragIdx=null;rl.querySelectorAll('.rank-item').forEach(x=>x.classList.remove('drag-over'));};
-        ri.ondragover=(e)=>{e.preventDefault();e.dataTransfer.dropEffect='move';ri.classList.add('drag-over');};
-        ri.ondragleave=()=>{ri.classList.remove('drag-over');};
-        ri.ondrop=(e)=>{e.preventDefault();ri.classList.remove('drag-over');if(dragIdx===null||dragIdx===i)return;
-          const moved=order.splice(dragIdx,1)[0];order.splice(i,0,moved);answers[item.id]=order;renderRank();clearErr(item.id);
-        };
-        // 移动端触摸拖拽
-        let touchStartY=0,touchIdx=null;
-        ri.ontouchstart=(e)=>{touchIdx=i;touchStartY=e.touches[0].clientY;ri.classList.add('dragging');};
-        ri.ontouchmove=(e)=>{e.preventDefault();const y=e.touches[0].clientY;
-          const items=[...rl.querySelectorAll('.rank-item')];
-          for(let j=0;j<items.length;j++){const rect=items[j].getBoundingClientRect();if(y>rect.top&&y<rect.bottom&&j!==touchIdx){
-            const moved2=order.splice(touchIdx,1)[0];order.splice(j,0,moved2);answers[item.id]=order;touchIdx=j;renderRank();break;
-          }}
-        };
-        ri.ontouchend=()=>{ri.classList.remove('dragging');touchIdx=null;};
         rl.appendChild(ri);
       });
     }
     renderRank();
     box.appendChild(rl);
+    // SortableJS 初始化
+    setTimeout(()=>{
+      new Sortable(rl,{
+        animation:180,
+        handle:'.rank-handle',
+        ghostClass:'drag-over',
+        chosenClass:'dragging',
+        dragClass:'dragging',
+        forceFallback:true, // 移动端兼容性更好
+        fallbackTolerance:3,
+        onEnd:function(evt){
+          const moved=order.splice(evt.oldIndex,1)[0];
+          order.splice(evt.newIndex,0,moved);
+          answers[item.id]=order;
+          // 更新序号
+          rl.querySelectorAll('.rank-item').forEach((el,i)=>{
+            el.querySelector('.rank-num').textContent=i+1;
+          });
+          clearErr(item.id);
+        }
+      });
+    },0);
   }
   return box;
 }
